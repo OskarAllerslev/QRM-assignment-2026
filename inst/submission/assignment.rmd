@@ -388,17 +388,13 @@ print(paste0("Kendall's tau for GOOG and MSFT: ", base::round(r1, 2) , " and for
 which supports our conclusions from 4.
 ## Coefficient of upper tail dependence
 
-```{r, echo = FALSE, results = 'hide', warning = FALSE, message = FALSE}
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
 
 utd_gm <- UpperTailDependence(copula_data = copula_data)
 utd_mi <- UpperTailDependence(copula_data = copula_data2)
 
-print(
-    base::paste0("UTD for GOOG/MSFT: ", base::round(utd_gm,2))
-)
-print(
-    base::paste0("UTD for MRK/IDU: ", base::round(utd_mi,2))
-)
+print(base::paste0("UTD for GOOG/MSFT: ", base::round(utd_gm,2)))
+print(base::paste0("UTD for MRK/IDU: ", base::round(utd_mi,2)))
 
 
 ```
