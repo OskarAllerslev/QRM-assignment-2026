@@ -1,0 +1,4 @@
+^renv$
+^renv\.lock$
+^QRM-assignment-2026\.Rproj$
+^\.Rproj\.user$
