@@ -80,3 +80,88 @@ fit_idu <- t.dist.plot(ticker = "IDU")
 (fit_goog$plot + fit_msft$plot) / (fit_mkr$plot + fit_idu$plot)
 
 ```
+
+This fit looks very nice. And we decide to use this going forward.
+
+
+
+# 2. Now use rigorous methods from extreme value theory to determine the upper tail distributions for the losses, and compare these with your proposed distributions in part (1). Do these EVT methods validate your previous choices? Explain
+
+We would like to look at the mean excess and hill plot for our emprical data. 
+We look at data which is positive and untill the $0.975$ quantile. 
+
+
+```{r, echo = FALSE, results = "hide", warnings = "FALSE", message = "FALSE"}
+
+me1 <- mean.excess.plot(ticker = "GOOG")
+me2 <- mean.excess.plot(ticker = "MSFT")
+me3 <- mean.excess.plot(ticker = "MRK")
+me4 <- mean.excess.plot(ticker = "IDU")
+
+(me1 + me2 ) / (me3 + me4)
+
+```
+
+We would also like to look at the hills plots. 
+
+
+
+```{r, echo = FALSE, results = "hide", warnings = "FALSE", message = "FALSE"}
+
+
+par(mfrow = c(2, 2))
+
+evir::hill(data = data$GOOG)
+evir::hill(data = data$MSFT)
+evir::hill(data = data$MRK)
+evir::hill(data = data$IDU)
+
+par(mfrow = c(1, 1))
+
+```
+
+By visual inspection we choose $U = (0.025,0.017, 0.01, 0.01)$ for in the order given in the dataset. 
+
+We are asked to "compare these with your proposed distributions in part (1)" which we interpret as directly looking at how well each of the distributions compare for the tail data. 
+
+We can easily, with R and the **evir**, package look at the tail of the distribution. 
+But we have to scale the t distribution to directly compare the cdf. 
+
+$$
+\begin{align*}
+P(X \leq t \mid X > u) &= \frac{
+    P(X \leq t \cap X > u) 
+}{
+    P(X > u)
+}  \\
+&= \frac{
+P(u < X \leq t) 
+}{
+    P(X > u)
+} \\
+&= \frac{P(X \leq t) - P(X \leq u)}{P(X > u)}
+\end{align*}
+$$
+
+We then plot the cdf for the t-distribution with the one for the gpd, and the emprical data. 
+The gpd is given by definition 2.2.7. Due to an implementation of the theoretical cdf of the t-distribution in R's **stats::pt** we dont need to calculate anything here.
+
+```{r, echo = FALSE, results = 'hide', warning = FALSE, message = FALSE}
+U = dplyr::tibble(
+    GOOG = 0.025,
+    MSFT = 0.017, 
+    MRK = 0.01, 
+    IDU = 0.01
+    )
+
+ct1 <- compare.tail(u = U$GOOG, ticker = "GOOG")
+ct2 <- compare.tail(u = U$MSFT, ticker = "MSFT")
+ct3 <- compare.tail(u = U$MRK, ticker = "MRK")
+ct4 <- compare.tail(u = U$IDU, ticker = "IDU")
+
+(ct1 + ct2) / (ct3 + ct4)
+
+```
+
+This shows that the t-distribution is surprisingly good at capturing the tail, compares to the direct modeling with the gpd. The only place where it is apparently worse is on GOOG. 
+This might be due to a poorly choosen threshold. To conclude, the evt theory validates our previous choices. 

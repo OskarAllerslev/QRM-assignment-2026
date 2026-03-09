@@ -17,4 +17,6 @@ Imports:
     patchwork,
     ggplot2, 
     here,
-    MASS
+    MASS,
+    tidyr,
+    evir
