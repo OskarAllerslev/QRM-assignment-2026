@@ -220,3 +220,39 @@ multi_t_fit <- function(
   )
   return(simulated)
 }
+
+
+#' get.pseudo.obs
+#' 
+#' @param ticker ticker symbol for the asset 
+#' @param u chosen threshold for the upper tail
+#' @export
+#' @returns numeric vector of uniform pseudo-observations
+get.pseudo.obs <- function(
+  ticker, 
+  u
+) {
+  data <- get_data() 
+  x <- data |> dplyr::pull(!!ticker)
+  n <- length(x)
+
+  x_tail <- x[x > u]
+  Nu <- length(x_tail)
+  
+  gpd_fit <- evir::gpd(data = x, threshold = u, method = "ml")
+  gamma <- gpd_fit$par.ests["xi"]
+  beta  <- gpd_fit$par.ests["beta"]
+  
+  emp_cdf <- ecdf(x)
+  
+  U <- dplyr::if_else(
+    condition = x <= u,
+    true  = emp_cdf(x), 
+    false = 1 - (Nu / n) * (1 + gamma * (x - u) / beta)^(-1 / gamma)
+  )
+  
+  U <- pmin(pmax(U, 1e-6), 1 - 1e-6)
+  
+  return(U)
+}
+

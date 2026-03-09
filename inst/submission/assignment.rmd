@@ -200,28 +200,167 @@ ss1 <- ggplot2::ggplot(data = sim_1, mapping = ggplot2::aes(x = sim1, y = sim2))
     ggplot2::geom_point() +  
     ggplot2::geom_smooth(method = "lm") + 
     ggplot2::geom_abline() + 
-    ggplot2::theme_minimal() 
+    ggplot2::theme_minimal() + 
+    ggplot2::labs(x = "GOOG") +
+    ggplot2::labs(y = "MSFT") + 
+    ggplot2::labs(title = "Simulated data")
 
 ss2 <- ggplot2::ggplot(data = sim_2, mapping = ggplot2::aes(x = sim1, y = sim2)) +
     ggplot2::geom_point() +  
     ggplot2::geom_smooth(method = "lm") + 
     ggplot2::geom_abline() + 
-    ggplot2::theme_minimal() 
+    ggplot2::theme_minimal()  + 
+    ggplot2::labs(x = "MRK") +
+    ggplot2::labs(y = "IDU") + 
+    ggplot2::labs(title = "Simulated data")
 
 pp1 <- ggplot2::ggplot(data = port.1, mapping = ggplot2::aes(x = GOOG, y = MSFT)) +
     ggplot2::geom_point() +  
     # ggplot2::stat_identity() + 
     ggplot2::geom_smooth(method = "lm") + 
     ggplot2::geom_abline() + 
-    ggplot2::theme_minimal() 
+    ggplot2::theme_minimal()  + 
+    ggplot2::labs(title = "Observed data")
 
 pp2 <- ggplot2::ggplot(data = port.2, mapping = ggplot2::aes(x = MRK, y = IDU)) +
     ggplot2::geom_point() +  
     # ggplot2::stat_identity() + 
     ggplot2::geom_smooth(method = "lm") + 
     ggplot2::geom_abline() + 
-    ggplot2::theme_minimal() 
-
+    ggplot2::theme_minimal()  + 
+    ggplot2::labs(title = "Observed data")
 (pp1 + ss1) / (pp2 + ss2)
 
 ```
+
+
+
+# 4. Next, consider an alternative approach using copulas. To this end, determine the marginal distributions as follows: (i) choose a generalised Pareto distribution for the large values, and (ii) use the empirical distribution for the small values (observing that these empirical distributions are “nearly” continuous when the number of observations is large).
+
+Note that
+$$
+\begin{align*}
+P(X > t) &= P(X > t \mid X > u) P(X > u) \\
+&= (1-P(X \leq t \mid X > u)) P(X > u) \\
+&= (1 - G_{\gamma, \beta}(t-u)) P(X > u)
+\end{align*}
+$$
+Then 
+$$
+\begin{align*}
+P(X \leq t) &= \underbrace{P(X > u)}_{\dagger} G_{\gamma, \beta}(x-u) 
+\end{align*}
+$$
+where $\dagger$ is just numerically $\frac{\#\{X_i > u \}}{n}$
+Then
+
+$$
+\begin{align*}
+\hat{F}_n(t) &= 1_{{t \leq u}} \left[ \frac{1}{n} \sum_{i=1}^n 1_{X_i \leq t} \right] + 1_{{t \leq u}^c} \left[1 - \frac{\#\{ X_i > u\}}{n}\left( 1 + \beta^{-1} \gamma \cdot (t-u) \right)^{-1/\gamma}  \right]
+\end{align*}
+$$
+
+
+
+```{r, echo = FALSE, results = 'hide', warning = FALSE, message = FALSE}
+U = dplyr::tibble(
+  GOOG = 0.025,
+  MSFT = 0.017,
+  MRK = 0.01,
+  IDU = 0.01
+)
+
+pobs1 <- get.pseudo.obs(
+  ticker = "GOOG",
+  u = U$GOOG
+)
+pobs2 <- get.pseudo.obs(
+  ticker = "MSFT",
+  u = U$MSFT
+)
+copula_data <- tibble::tibble(
+  U1 = pobs1,
+  U2 = pobs2
+)
+
+pobs3 <- get.pseudo.obs(
+  ticker = "MRK",
+  u = U$MRK
+)
+pobs4 <- get.pseudo.obs(
+  ticker = "IDU",
+  u = U$IDU
+)
+copula_data2 <- tibble::tibble(
+  U3 = pobs3,
+  U4 = pobs4
+)
+copula_plot <- ggplot2::ggplot(
+  data = copula_data,
+  mapping = ggplot2::aes(x = U1, y = U2)
+) +
+  ggplot2::geom_point(color = "steelblue", alpha = 0.5, size = 1.5) +
+  ggplot2::scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  ggplot2::scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  ggplot2::geom_abline(
+    intercept = 0,
+    slope = 1,
+    linetype = "dashed",
+    color = "darkgray"
+  ) +
+  ggplot2::theme_minimal() +
+  ggplot2::theme(
+    panel.border = ggplot2::element_rect(
+      color = "black",
+      fill = NA,
+      linewidth = 0.5
+    ),
+    panel.grid.minor = ggplot2::element_blank()
+  ) +
+  ggplot2::labs(
+    title = paste("Copula Data: GOOG and MSFT"),
+    subtitle = paste0("Thresholds: u1 = ", U$GOOG, ", u2 = ", U$MSFT),
+    x = paste("Uniform GOOG"),
+    y = paste("Uniform MSFT")
+  )
+
+copula_plot2 <- ggplot2::ggplot(
+  data = copula_data2,
+  mapping = ggplot2::aes(x = U3, y = U4)
+) +
+  ggplot2::geom_point(color = "steelblue", alpha = 0.5, size = 1.5) +
+  ggplot2::scale_x_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  ggplot2::scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  ggplot2::geom_abline(
+    intercept = 0,
+    slope = 1,
+    linetype = "dashed",
+    color = "darkgray"
+  ) +
+  ggplot2::theme_minimal() +
+  ggplot2::theme(
+    panel.border = ggplot2::element_rect(
+      color = "black",
+      fill = NA,
+      linewidth = 0.5
+    ),
+    panel.grid.minor = ggplot2::element_blank()
+  ) +
+  ggplot2::labs(
+    title = paste("Copula Data: MRK and IDU"),
+    subtitle = paste0("Thresholds: u1 = ", U$MRK, ", u2 = ", U$IDU),
+    x = paste("Uniform MRK"),
+    y = paste("Uniform IDU")
+  )
+copula_plot + copula_plot2
+```
+
+### GOOG vs MSFT
+
+The left plot shows a positive correlation between the two tickers. 
+For the extreme values $(0,0)$ and $(1,1)$ the points are closely packed, indicating strong tail depedence. 
+This makes intuitively sense, since if the tech sector has a red days, both tickers probably move alike. 
+
+### MRK vs IDU
+Here the points scatter almost equally on $[0,1]^2$ indicating a much lower degree of dependence. Also cheating a bit an looking at the covariance matrix from the t-distribution from previous exercises, we know that the two are almost independen since $\Sigma \sim 0$. 
+Still looking at tail dependence we note some clusters. They are probably a product of generel economic behaviour. 
