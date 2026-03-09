@@ -3,6 +3,8 @@
 S3method(mean,excess)
 S3method(mean,excess.plot)
 S3method(t,dist.plot)
+export(UpperTailDependence)
 export(compare.tail)
+export(get.pseudo.obs)
 export(get_data)
 export(multi_t_fit)

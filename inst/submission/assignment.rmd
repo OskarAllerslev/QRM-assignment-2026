@@ -364,3 +364,44 @@ This makes intuitively sense, since if the tech sector has a red days, both tick
 ### MRK vs IDU
 Here the points scatter almost equally on $[0,1]^2$ indicating a much lower degree of dependence. Also cheating a bit an looking at the covariance matrix from the t-distribution from previous exercises, we know that the two are almost independen since $\Sigma \sim 0$. 
 Still looking at tail dependence we note some clusters. They are probably a product of generel economic behaviour. 
+
+
+# 5. Next, using some exploratory analysis of, e.g., the coefficient of upper tail dependence and Kendall’s τ , determine to what extent the data has a tendency towards comonotonicity, countermonotonicity, or independence. Now propose a copula to model the joint distribution for each of the two pairs.
+
+```{r, echo = FALSE, results = 'hide', warning = FALSE, message = FALSE}
+data <- get_data()
+
+port.1 <- data  |> dplyr::select(GOOG, MSFT)
+port.2 <- data  |> dplyr::select(-GOOG, -MSFT, -Date)
+
+```
+## Kendalls tau 
+
+```{r, echo = FALSE,  warning = FALSE, message = FALSE}
+
+r1 <- stats::cor(x = port.1$GOOG, y = port.1$MSFT, method = "kendall")
+r2 <- stats::cor(x = port.2$MRK, y = port.2$IDU, method = "kendall")
+print(paste0("Kendall's tau for GOOG and MSFT: ", base::round(r1, 2) , " and for MRK and IDU: ", base::round(r2, 2) ))
+
+```
+
+which supports our conclusions from 4.
+## Coefficient of upper tail dependence
+
+```{r, echo = FALSE, results = 'hide', warning = FALSE, message = FALSE}
+
+utd_gm <- UpperTailDependence(copula_data = copula_data)
+utd_mi <- UpperTailDependence(copula_data = copula_data2)
+
+print(
+    base::paste0("UTD for GOOG/MSFT: ", base::round(utd_gm,2))
+)
+print(
+    base::paste0("UTD for MRK/IDU: ", base::round(utd_mi,2))
+)
+
+
+```
+
+
+## Copula 

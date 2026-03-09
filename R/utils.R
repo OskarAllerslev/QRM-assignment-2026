@@ -256,3 +256,24 @@ get.pseudo.obs <- function(
   return(U)
 }
 
+
+
+#' UpperTailDependence 
+#' @export
+#' @returns float
+UpperTailDependence <- function(
+  quantile_for_uniform = 0.95, 
+  copula_data
+) {
+  n <- nrow(copula_data)
+  
+  Cuu <- copula_data  |> dplyr::filter(
+    dplyr::if_all(dplyr::everything(), ~ .x <= quantile_for_uniform)
+  )   |> 
+    nrow()
+  C <- Cuu / n
+  tæller <- (1 - 2 * quantile_for_uniform) +  C
+  nævner <- (1- quantile_for_uniform)
+  return(tæller / nævner)
+  
+}
