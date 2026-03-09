@@ -165,3 +165,63 @@ ct4 <- compare.tail(u = U$IDU, ticker = "IDU")
 
 This shows that the t-distribution is surprisingly good at capturing the tail, compares to the direct modeling with the gpd. The only place where it is apparently worse is on GOOG. 
 This might be due to a poorly choosen threshold. To conclude, the evt theory validates our previous choices. 
+
+
+# 3. Propose an elliptical distribution for the joint distribution for each of the two pairs.
+
+
+```{r, echo = FALSE, results = 'hide', warning = FALSE, message = FALSE}
+data <- get_data()
+
+port.1 <- data  |> dplyr::select(GOOG, MSFT)
+port.2 <- data  |> dplyr::select(-GOOG, -MSFT, -Date)
+
+```
+
+
+From example 3.2.7 we have the multivariate-t-distribution, which we fit on the data. 
+We want to simulate from this fit, and compare with the actual data to determine if this choice of distribution is good.
+
+
+```{r, echo = FALSE, results = 'hide', warning = FALSE, message = FALSE}
+set.seed(2)
+
+sim_1 <- multi_t_fit(port.1)
+sim_2 <- multi_t_fit(port.2)
+
+
+```
+
+
+
+```{r, echo = FALSE, results = 'hide', warning = FALSE, message = FALSE}
+
+ss1 <- ggplot2::ggplot(data = sim_1, mapping = ggplot2::aes(x = sim1, y = sim2)) +
+    ggplot2::geom_point() +  
+    ggplot2::geom_smooth(method = "lm") + 
+    ggplot2::geom_abline() + 
+    ggplot2::theme_minimal() 
+
+ss2 <- ggplot2::ggplot(data = sim_2, mapping = ggplot2::aes(x = sim1, y = sim2)) +
+    ggplot2::geom_point() +  
+    ggplot2::geom_smooth(method = "lm") + 
+    ggplot2::geom_abline() + 
+    ggplot2::theme_minimal() 
+
+pp1 <- ggplot2::ggplot(data = port.1, mapping = ggplot2::aes(x = GOOG, y = MSFT)) +
+    ggplot2::geom_point() +  
+    # ggplot2::stat_identity() + 
+    ggplot2::geom_smooth(method = "lm") + 
+    ggplot2::geom_abline() + 
+    ggplot2::theme_minimal() 
+
+pp2 <- ggplot2::ggplot(data = port.2, mapping = ggplot2::aes(x = MRK, y = IDU)) +
+    ggplot2::geom_point() +  
+    # ggplot2::stat_identity() + 
+    ggplot2::geom_smooth(method = "lm") + 
+    ggplot2::geom_abline() + 
+    ggplot2::theme_minimal() 
+
+(pp1 + ss1) / (pp2 + ss2)
+
+```

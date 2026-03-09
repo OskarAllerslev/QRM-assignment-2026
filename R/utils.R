@@ -195,3 +195,28 @@ compare.tail <- function(
       caption = "Black: Data | Red: GPD | Blue: Conditional Student-t"
     )
 }
+
+
+
+#' multi_t_fit 
+#' @export
+#' @returns tibble
+multi_t_fit <- function(
+  portfolio_data
+) {
+  port.1.fit <- QRM::fit.mst(
+    data = portfolio_data |> as.matrix()
+  )
+
+  sim.1 <- QRM::rmt(
+    n = 2302,
+    df = port.1.fit$df,
+    mu = port.1.fit$mu,
+    Sigma = port.1.fit$Sigma
+  )
+  simulated <- tibble::tibble(
+    sim1 = sim.1[, 1],
+    sim2 = sim.1[, 2]
+  )
+  return(simulated)
+}
