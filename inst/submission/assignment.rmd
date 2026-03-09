@@ -1,0 +1,82 @@
+
+---
+title: "Assignment QRM"
+output: html_document
+date: "2026-03-09"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(patchwork)
+devtools::load_all()
+```
+
+
+# Start of Assignment
+
+## Fetch data
+
+```{r, include = FALSE}
+
+data <- get_data()
+
+```
+
+
+# 1. Propose marginal distribution functions for each of the four stocks
+
+We inspect each of the distributions by looking at the marginal distributions.
+
+```{r, results =  'hide', echo = FALSE}
+par(mfrow = c(2, 2))
+fitdistrplus::descdist(data$GOOG, boot = 100)
+fitdistrplus::descdist(data$MSFT, boot = 100)
+fitdistrplus::descdist(data$MRK, boot = 100)
+fitdistrplus::descdist(data$IDU, boot = 100)
+par(mfrow = c(1, 1))
+
+```
+
+Here we have plottet respectively from top left to bottom right, GOOG, MSFT, MKR, IDU.
+
+We have used the package **fitdistrplus** to plot the kurtosis vs the square of skewness. This should be a nice way to characterise the distributions. It measures the probability of extreme observations. 
+
+$$
+\begin{align*}
+\frac{
+    E[(X - \mu)^4]
+}{
+    \left( E[X - \mu)^2] \right)^2
+}
+\end{align*}
+$$
+We note that our distributions has a much larger kurtosis than that of a log-normal distribution.
+
+
+Next to look at the asymmetry of the distributions, we look at the skewness.
+
+$$
+\begin{align*}
+\frac{
+    E[(X - \mu)^3]
+}{
+    \left( E[X - \mu)^2] \right)^{3/2}
+}
+\end{align*}
+$$
+The are all around zero, which indicates that the distributions are quite symmetric. 
+
+Hence we will look at the t-distributions, since it can be parameterised with fatter tails, and still is symmetric. 
+
+
+```{r, results =  'hide', echo = FALSE, warning = "FALSE", message = "FALSE"}
+
+fit_goog <- t.dist.plot(ticker = "GOOG")
+fit_msft <- t.dist.plot(ticker = "MSFT")
+fit_mkr <- t.dist.plot(ticker = "MRK")
+fit_idu <- t.dist.plot(ticker = "IDU")
+
+(fit_goog$plot + fit_msft$plot) / (fit_mkr$plot + fit_idu$plot)
+
+```
