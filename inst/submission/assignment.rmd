@@ -548,3 +548,25 @@ print(base::paste0("Copula VaR MI: ", base::round(var_mi_cop, 2)))
 
 
 
+### Summary of Value-at-Risk (99.99%) Estimates
+
+| Portfolio | Elliptical Method (MVT) | Copula Method (with EVT) |
+| :--- | :--- | :--- |
+| **GOOG & MSFT** | $4,064.45 | $2,649.41 *(t-copula)* |
+| **MRK & IDU** | $2,012.84 | $2,015.30 *(Gaussian copula)* |
+
+We note that the elliptical distribution for the GOOG & MSFT yields a far greater var than the copula method. For the gaussian case it does not matter since the both the methods are approximately the same. 
+
+
+
+# 8. Finally, draw conclusions about the efficacy of the different approaches, and comment on the challenges in applying the various methods in order to draw conclusions about the VaR.
+
+1. Elliptical methods 
+  This method is very effective when looking at the computational speed and analytical results we have. Thanks to the results from the book we can easily simulate. 
+  There are some drawbacks, which is the symmetry and it forces all assets ot share the same tail parameter. Perhaps this can overestimate the risk.
+2. Copula methods
+  this is also a good method. We use the sklars theorem, and we find this method to be perhaps the most accurate. 
+
+Some of the challenges in applying these methods are how one shoudl choose the threshold in the gpd. We just eyeballed it based off of the plots. 
+Also we have some data sparcity in the tails. One could perhaps have used the importance sampling method here. 
+The copula method requires a bit more computational power. But for our study here, its not a problem.

@@ -297,7 +297,7 @@ var_eliptical <- function(
   Sigma <- fit$Sigma
 
   wt_mm_mu <- (as.numeric(t(w) %*% mu)  ) 
-  wt.mm.sigma.mm.mu <- as.numeric(t(w) %*% Sigma %*% w)
+  wt.mm.sigma.mm.mu <- sqrt(as.numeric(t(w) %*% Sigma %*% w))
   rho_y <- stats::qt(p = alpha, df = df)
 
   res <- wt_mm_mu + wt.mm.sigma.mm.mu * rho_y
