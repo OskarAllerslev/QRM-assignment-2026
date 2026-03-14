@@ -190,13 +190,15 @@ sim_1 <- multi_t_fit(port.1)
 sim_2 <- multi_t_fit(port.2)
 
 
+
+
 ```
 
 
 
 ```{r, echo = FALSE, results = 'hide', warning = FALSE, message = FALSE}
 
-ss1 <- ggplot2::ggplot(data = sim_1, mapping = ggplot2::aes(x = sim1, y = sim2)) +
+ss1 <- ggplot2::ggplot(data = sim_1$simulated, mapping = ggplot2::aes(x = sim1, y = sim2)) +
     ggplot2::geom_point() +  
     ggplot2::geom_smooth(method = "lm") + 
     ggplot2::geom_abline() + 
@@ -205,7 +207,7 @@ ss1 <- ggplot2::ggplot(data = sim_1, mapping = ggplot2::aes(x = sim1, y = sim2))
     ggplot2::labs(y = "MSFT") + 
     ggplot2::labs(title = "Simulated data")
 
-ss2 <- ggplot2::ggplot(data = sim_2, mapping = ggplot2::aes(x = sim1, y = sim2)) +
+ss2 <- ggplot2::ggplot(data = sim_2$simulated, mapping = ggplot2::aes(x = sim1, y = sim2)) +
     ggplot2::geom_point() +  
     ggplot2::geom_smooth(method = "lm") + 
     ggplot2::geom_abline() + 
@@ -235,7 +237,7 @@ pp2 <- ggplot2::ggplot(data = port.2, mapping = ggplot2::aes(x = MRK, y = IDU)) 
 
 
 
-# 4. Next, consider an alternative approach using copulas. To this end, determine the marginal distributions as follows: (i) choose a generalised Pareto distribution for the large values, and (ii) use the empirical distribution for the small values (observing that these empirical distributions are “nearly” continuous when the number of observations is large).
+# 4. Next, consider an alternative approach using copulas. To this end, determine the marginal distributions as follows: (i) choose a generalised Pareto distribution for the large values, and (ii) use the empirical distribution for the small values (observing that these empirical distributions are “nearly” continuous when the number of observations is large). ----
 
 Note that
 $$
@@ -375,6 +377,7 @@ port.1 <- data  |> dplyr::select(GOOG, MSFT)
 port.2 <- data  |> dplyr::select(-GOOG, -MSFT, -Date)
 
 ```
+
 ## Kendalls tau 
 
 ```{r, echo = FALSE,  warning = FALSE, message = FALSE}
@@ -386,6 +389,7 @@ print(paste0("Kendall's tau for GOOG and MSFT: ", base::round(r1, 2) , " and for
 ```
 
 which supports our conclusions from 4.
+
 ## Coefficient of upper tail dependence
 
 ```{r, echo = FALSE, warning = FALSE, message = FALSE}
@@ -401,3 +405,146 @@ print(base::paste0("UTD for MRK/IDU: ", base::round(utd_mi,2)))
 
 
 ## Copula 
+We note that Kendall's tau is much greater for the two tech stocks than for merck and the etf. 
+Also the upper tail dependence shows the same pattern. 
+
+Noting from the plots of the copulas, we note that we almost have independence in the second portfolio hence we will propose a guassian copula. For the first portfolio we will propose a t-copula.
+
+
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+
+t_cop_gm <- copula::tCopula(
+  dim = 2, 
+  dispstr = "un"
+)
+fit_t_gm <- copula::fitCopula(
+  t_cop_gm, 
+  data = as.matrix(copula_data), 
+  method = "ml"
+)
+
+gauss_cop_mi <- copula::normalCopula(
+  dim = 2, 
+  dispstr = "un"
+)
+fit_gauss_mi <- copula::fitCopula(
+  gauss_cop_mi, 
+  data = as.matrix(copula_data2), 
+  method = "ml"
+)
+
+
+```
+
+To determine if our proposed copulas are any good, we follow the method used on page 157 in the notes. 
+We note 
+$$
+\begin{align*}
+\tau(X_1, X_2) &= \frac{2}{\pi} \arcsin\rho \iff \\
+\rho &= \sin \left(\frac{\pi}{2} \tau\right)
+\end{align*}
+$$
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+print(summary(fit_t_gm))
+print(summary(fit_gauss_mi))
+rho_k_1 <- sin(pi * r1 / 2)
+rho_k_2 <- sin(pi * r2 / 2)
+print(base::paste0("T-copula: rho = sin(pi * kendalls_tau /2) = ", base::round(rho_k_1,2)))
+print(base::paste0("G-copula: rho = sin(pi * kendalls_tau /2) = ", base::round(rho_k_2,2)))
+```
+
+We note that we are very close to the observed rho, hence we think this is an acceptable fit. 
+
+
+# 6. As an alternative, determine the copula which is obtained from the Frechet bounds and describes the “worst-case” scenario ----
+
+We have from proposition 4.1.5 the Frechet bounds, with $d = 2$.
+
+$$
+\begin{align*}
+W(u,v) &= \max \left[ u + v -1, 0 \right] \\
+M(u,v) &= \min \left[ u, v \right]
+\end{align*}
+$$
+
+The worst case is when the assets move together, since we then obtain no diversification advantages. 
+The worst case is then the one with comonotonicity which is $\min \left[ u, v \right]$
+
+# 7. Now write down the loss random variable for a portfolio where $10,000 is invested in each of the two stocks, both for the Merck/IDU portfolio and for the Google/Microsoft portfolio. Using this, calculate the Value-at-Risk for each of these portfolios using both the elliptical methods suggested in part (3) above, and the copula methods described in parts (4) and (5) above. In these calculations, choose α = 0.9999 (since these are daily returns). How do these different VaR estimates compare? ----
+
+We know that the loss is $X_{t,i} = - \log S_{t,i} / S_{t-1,i}$ which implies that $S_{t,i} = S_{t-1,i} e^{-X{t,i}}$.
+Hence for a portfolio as ours with $w_1 = 10000$ and $w_2 = 10000$. 
+$$
+\begin{align*}
+ L_{port} &= \sum_{i=1}^2 X_i w_i
+\end{align*}
+$$
+
+## Elliptical methods
+We now calculate the value at risk for each of these portfolios using first the elliptical methods. 
+In (3) we proposed multivariate t-distributions. 
+We Denote $L = m + a^tX$ where $a = w \in \mathbb{R}^2$ and $m = 0$ recall the set $\mathcal{M}_X$ from the notes. 
+We then have that $X \sim E_d(\mu, \Sigma, \phi)$ from (3) and $\rho$ is set to the value at risk. Thus for our alpha $\rho$ fulfills the conditions of theorem 3.2.10 (i) 
+$$
+\rho(L) = w^t\mu + \sqrt{w^t \Sigma w }\rho(Y)
+$$
+where $Y \sim S_1(\phi)$, this is $\rho(Y) = t_v^{-1}(\alpha)$ since our $\phi$ is the standard t distribution. 
+
+
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+
+var_gm <- var_eliptical(fit = sim_1$fit)
+var_mi <- var_eliptical(fit = sim_2$fit)
+
+print(base::paste0("VAR GM: ", base::round(var_gm,2)))
+print(base::paste0("VAR mi: ", base::round(var_mi,2)))
+# dette er forkert 
+
+```
+
+## Copula Methods
+
+In (4) we used the empircal and the gpd, in (5) we used the gaussian and t-copula.
+We cannot find these analytically so we simulate.
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+
+set.seed(2026)
+N_sim <- 1e6 
+
+sim_u_gm <- copula::rCopula(N_sim, fit_t_gm@copula)
+
+sim_goog <- inverse_semi_parametric(sim_u_gm[, 1], "GOOG", U$GOOG)
+sim_msft <- inverse_semi_parametric(sim_u_gm[, 2], "MSFT", U$MSFT)
+
+loss_gm_cop <- 10000 * sim_goog + 10000 * sim_msft
+var_gm_cop <- stats::quantile(loss_gm_cop, probs = 0.9999)
+
+sim_u_mi <- copula::rCopula(N_sim, fit_gauss_mi@copula)
+
+sim_mrk <- inverse_semi_parametric(sim_u_mi[, 1], "MRK", U$MRK)
+sim_idu <- inverse_semi_parametric(sim_u_mi[, 2], "IDU", U$IDU)
+
+loss_mi_cop <- 10000 * sim_mrk + 10000 * sim_idu
+var_mi_cop <- stats::quantile(loss_mi_cop, probs = 0.9999)
+
+# VaR for comonotonic assets is strictly additive: VaR(L1 + L2) = VaR(L1) + VaR(L2)
+var_goog_marg <- inverse_semi_parametric(0.9999, "GOOG", U$GOOG)
+var_msft_marg <- inverse_semi_parametric(0.9999, "MSFT", U$MSFT)
+var_gm_worst  <- 10000 * var_goog_marg + 10000 * var_msft_marg
+
+var_mrk_marg <- inverse_semi_parametric(0.9999, "MRK", U$MRK)
+var_idu_marg <- inverse_semi_parametric(0.9999, "IDU", U$IDU)
+var_mi_worst <- 10000 * var_mrk_marg + 10000 * var_idu_marg
+
+print(base::paste0("Copula VaR GM: ", base::round(var_gm_cop, 2)))
+print(base::paste0("Copula VaR MI: ", base::round(var_mi_cop, 2)))
+```
+
+
+
+
+

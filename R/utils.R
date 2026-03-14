@@ -218,7 +218,12 @@ multi_t_fit <- function(
     sim1 = sim.1[, 1],
     sim2 = sim.1[, 2]
   )
-  return(simulated)
+  res <- list(
+    simulated = simulated, 
+    fit = port.1.fit
+  )
+
+  return(res)
 }
 
 
@@ -276,4 +281,46 @@ UpperTailDependence <- function(
   nævner <- (1- quantile_for_uniform)
   return(tæller / nævner)
   
+}
+
+
+
+
+
+var_eliptical <- function(
+  fit, 
+  w = c(10000L, 10000L), 
+  alpha = 0.9999 
+) {
+  df <- fit$df
+  mu <- fit$mu
+  Sigma <- fit$Sigma
+
+  wt_mm_mu <- (as.numeric(t(w) %*% mu)  ) 
+  wt.mm.sigma.mm.mu <- as.numeric(t(w) %*% Sigma %*% w)
+  rho_y <- stats::qt(p = alpha, df = df)
+
+  res <- wt_mm_mu + wt.mm.sigma.mm.mu * rho_y
+  return(res)
+}
+
+inverse_semi_parametric <- function(p, ticker_name, u_thresh) {
+  data_vec <- data |> dplyr::pull(!!ticker_name)
+  n <- length(data_vec)
+  x_tail <- data_vec[data_vec > u_thresh]
+  Nu <- length(x_tail)
+  gpd_fit <- evir::gpd(data = data_vec, threshold = u_thresh, method = "ml")
+  gamma <- gpd_fit$par.ests["xi"]
+  beta  <- gpd_fit$par.ests["beta"]
+  prob_u <- 1 - (Nu / n)
+  res <- numeric(length(p))
+  idx_emp <- which(p <= prob_u)
+  if (length(idx_emp) > 0) {
+    res[idx_emp] <- stats::quantile(data_vec, probs = p[idx_emp], type = 1)
+  }
+  idx_gpd <- which(p > prob_u)
+  if (length(idx_gpd) > 0) {
+    res[idx_gpd] <- u_thresh + (beta / gamma) * (((1 - p[idx_gpd]) / (Nu / n))^(-gamma) - 1)
+  }
+  return(res)
 }
